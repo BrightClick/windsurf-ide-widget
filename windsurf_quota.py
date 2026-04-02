@@ -2,12 +2,38 @@ import os
 import time
 import shutil
 import sqlite3
+import logging
+from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
+
+
+# --- Logging setup: daily rotation, keep 7 days ---
+def setup_logger():
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, 'windsurf_quota.log')
+
+    logger = logging.getLogger('windsurf_quota')
+    logger.setLevel(logging.INFO)
+
+    if not logger.handlers:
+        handler = TimedRotatingFileHandler(
+            log_path, when='midnight', interval=1, backupCount=7, encoding='utf-8'
+        )
+        handler.suffix = '%Y-%m-%d'
+        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    return logger
+
+
+log = setup_logger()
 
 
 class WindsurfQuotaChecker:
@@ -19,6 +45,7 @@ class WindsurfQuotaChecker:
         self.profile_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'chrome_profile')
         
         if not self.email or not self.password:
+            log.error("WINDSURF_EMAIL or WINDSURF_PASSWORD not set in .env file")
             raise ValueError("Please set WINDSURF_EMAIL and WINDSURF_PASSWORD in .env file")
     
     def _clean_profile_lock(self):
@@ -34,7 +61,7 @@ class WindsurfQuotaChecker:
     
     def setup_driver(self, headless=False):
         self._clean_profile_lock()
-        
+        log.info(f"Setting up Chrome driver (headless={headless})")
         options = uc.ChromeOptions()
         if headless:
             options.add_argument('--headless=new')
@@ -49,40 +76,39 @@ class WindsurfQuotaChecker:
         time.sleep(4)
         current_url = self.driver.current_url
         if 'login' in current_url.lower():
-            print("Not logged in - redirected to login page")
+            log.info("Not logged in - redirected to login page")
             return False
         
         page_text = self.driver.find_element(By.TAG_NAME, 'body').text.lower()
         if 'quota' in page_text or 'usage' in page_text or 'remaining' in page_text:
-            print("Already logged in!")
+            log.info("Already logged in - session active")
             return True
         return False
     
     def login(self):
-        print("Navigating to login page...")
+        log.info("Navigating to login page")
         self.driver.get('https://windsurf.com/account/login')
         
         wait = WebDriverWait(self.driver, 20)
         
-        print("Waiting for email input field...")
+        log.info("Waiting for email input field")
         email_input = wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="email"], input[name="email"], input[placeholder*="email" i]'))
         )
         email_input.clear()
         email_input.send_keys(self.email)
-        print(f"Entered email: {self.email}")
+        log.info(f"Entered email: {self.email}")
         
         time.sleep(1)
         
-        print("Looking for password input field...")
+        log.info("Entering password")
         password_input = self.driver.find_element(By.CSS_SELECTOR, 'input[type="password"], input[name="password"]')
         password_input.clear()
         password_input.send_keys(self.password)
-        print("Entered password")
         
         time.sleep(1)
         
-        print("Looking for login button...")
+        log.info("Looking for login button")
         button_selectors = [
             (By.CSS_SELECTOR, 'button[type="submit"]'),
             (By.XPATH, '//button[contains(text(), "Log in") or contains(text(), "Sign in") or contains(text(), "Continue")]'),
@@ -99,16 +125,17 @@ class WindsurfQuotaChecker:
                 continue
         
         if not login_button:
+            log.error("Could not find login button")
             raise Exception("Could not find login button")
         
         login_button.click()
-        print("Clicked login button")
+        log.info("Clicked login button, waiting for redirect")
         
         time.sleep(5)
-        print("Login successful!")
+        log.info("Login completed")
     
     def get_quota_info(self):
-        print("\nNavigating to usage page...")
+        log.info("Navigating to usage page")
         self.driver.get('https://windsurf.com/subscription/usage')
         time.sleep(4)
         
@@ -118,7 +145,7 @@ class WindsurfQuotaChecker:
             'extra_balance': None
         }
         
-        print("Extracting quota information...")
+        log.info("Extracting quota information")
         
         all_text = self.driver.find_element(By.TAG_NAME, 'body').text
         lines = all_text.split('\n')
@@ -175,11 +202,13 @@ class WindsurfQuotaChecker:
                     continue
         
         if quota_data['daily_quota']:
-            print(f"Daily quota: {quota_data['daily_quota']}")
+            log.info(f"Daily quota: {quota_data['daily_quota']}")
         if quota_data['weekly_quota']:
-            print(f"Weekly quota: {quota_data['weekly_quota']}")
+            log.info(f"Weekly quota: {quota_data['weekly_quota']}")
         if quota_data['extra_balance']:
-            print(f"Extra balance: {quota_data['extra_balance']}")
+            log.info(f"Extra balance: {quota_data['extra_balance']}")
+        if not any(quota_data.values()):
+            log.warning("No quota data found on the page")
         
         return quota_data
     
@@ -221,7 +250,7 @@ class WindsurfQuotaChecker:
             quota_data.get('extra_balance')
         ))
         conn.commit()
-        print(f"Data saved to database (row id: {cursor.lastrowid})")
+        log.info(f"Quota data saved to DB (row id: {cursor.lastrowid})")
         conn.close()
         
         import json
@@ -235,13 +264,13 @@ class WindsurfQuotaChecker:
             }, f)
     
     def get_credit_history(self):
-        print("\nNavigating to credit history page...")
+        log.info("Navigating to credit history page")
         self.driver.get('https://windsurf.com/subscription/credit-history')
         time.sleep(4)
         
         credit_entries = []
         
-        print("Extracting credit history...")
+        log.info("Extracting credit history")
         all_text = self.driver.find_element(By.TAG_NAME, 'body').text
         lines = [line.strip() for line in all_text.split('\n') if line.strip()]
         
@@ -269,11 +298,11 @@ class WindsurfQuotaChecker:
                         'date': date
                     }
                     credit_entries.append(entry)
-                    print(f"  {description} | {amount} | {date}")
+                    log.info(f"Credit entry: {description} | {amount} | {date}")
             i += 1
         
         if not credit_entries:
-            print("No credit history entries found")
+            log.warning("No credit history entries found")
         
         return credit_entries
     
@@ -307,7 +336,7 @@ class WindsurfQuotaChecker:
                 new_count += 1
         
         conn.commit()
-        print(f"Credit history: {new_count} new entries saved, {len(credit_entries) - new_count} already existed")
+        log.info(f"Credit history: {new_count} new entries saved, {len(credit_entries) - new_count} already existed")
         conn.close()
     
     def close(self):
@@ -318,14 +347,15 @@ class WindsurfQuotaChecker:
                 pass
     
     def run(self, headless=False):
+        log.info("=== Windsurf quota sync started ===")
         try:
             self.setup_driver(headless=headless)
             
-            print("Checking if already logged in...")
+            log.info("Checking login status")
             if self.is_logged_in():
-                print("Session still active - skipping login!")
+                log.info("Session still active - skipping login")
             else:
-                print("Need to log in...")
+                log.info("Need to log in")
                 self.login()
             
             quota_info = self.get_quota_info()
@@ -334,25 +364,22 @@ class WindsurfQuotaChecker:
             credit_entries = self.get_credit_history()
             self.save_credit_history_to_db(credit_entries)
             
-            print("\n" + "="*50)
-            print("WINDSURF QUOTA INFORMATION")
-            print("="*50)
-            print(f"Your daily quota: {quota_info['daily_quota'] or 'Not found'}")
-            print(f"Your weekly quota: {quota_info['weekly_quota'] or 'Not found'}")
-            print(f"Extra usage balance available: {quota_info['extra_balance'] or 'Not found'}")
-            print(f"Credit history entries: {len(credit_entries)}")
-            print("="*50)
+            log.info(f"Daily quota: {quota_info['daily_quota'] or 'Not found'}")
+            log.info(f"Weekly quota: {quota_info['weekly_quota'] or 'Not found'}")
+            log.info(f"Extra balance: {quota_info['extra_balance'] or 'Not found'}")
+            log.info(f"Credit history entries fetched: {len(credit_entries)}")
+            log.info("=== Sync completed successfully ===")
             
             return quota_info
             
         except Exception as e:
-            print(f"\nError occurred: {str(e)}")
+            log.error(f"Error during sync: {str(e)}")
             try:
                 if self.driver:
                     self.driver.save_screenshot('error_screenshot.png')
-                    print("Screenshot saved as error_screenshot.png")
+                    log.info("Screenshot saved as error_screenshot.png")
             except:
-                print("Could not save screenshot (browser may have closed)")
+                log.warning("Could not save screenshot (browser may have closed)")
             raise
         finally:
             self.close()
