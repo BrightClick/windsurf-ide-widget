@@ -1,0 +1,33 @@
+{
+  "name": "windsurf-quota",
+  "displayName": "Windsurf Quota",
+  "description": "Shows Windsurf daily quota % and extra balance in the status bar",
+  "version": "1.0.0",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Other"],
+  "activationEvents": ["*"],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Windsurf Quota",
+      "properties": {
+        "windsurfQuota.jsonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Full path to quota_latest.json (e.g. C:\\Projects\\windsurf_api\\quota_latest.json)"
+        },
+        "windsurfQuota.refreshIntervalSeconds": {
+          "type": "number",
+          "default": 60,
+          "description": "How often to re-read the file (seconds)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "windsurfQuota.refresh",
+        "title": "Windsurf Quota: Refresh Now"
+      }
+    ]
+  }
+}
