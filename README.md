@@ -1,127 +1,131 @@
 # Windsurf Quota Checker
 
-A Python automation tool that logs into your Windsurf account and retrieves your usage quota information.
+Automatically scrapes your [Windsurf](https://windsurf.com) account for daily/weekly quota and extra balance, stores results in a local SQLite database, and shows live stats in your VS Code / Windsurf IDE status bar.
+
+Runs silently in the background on a schedule — no browser window, no manual steps.
 
 ## Features
 
-- Automated login to Windsurf account
-- Extracts daily quota percentage
-- Extracts weekly quota percentage
-- Retrieves extra usage balance
-- Secure credential management using environment variables
-- Session persistence (saves cookies and storage data)
-
-**Note:** Due to Windsurf's security measures, sessions may expire quickly between runs. The script will automatically re-login when needed, so you still get fully automated quota checking without manual intervention.
-
-## Prerequisites
-
-- Python 3.7 or higher
-- Google Chrome browser installed
-- Internet connection
-
-## Installation
-
-1. Clone or download this project
-
-2. Install required dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Setup Guide
-
-### Step 1: Configure Your Credentials
-
-1. Copy the example environment file:
-   - Rename `.env.example` to `.env`
-
-2. Edit the `.env` file and add your Windsurf credentials:
-   ```
-   WINDSURF_EMAIL=your_email@example.com
-   WINDSURF_PASSWORD=your_password_here
-   ```
-
-   **Important:** 
-   - Replace `your_email@example.com` with your actual Windsurf email
-   - Replace `your_password_here` with your actual Windsurf password
-   - The `.env` file is already in `.gitignore` to keep your credentials safe
-
-### Step 2: Run the Script
-
-Execute the main script:
-```bash
-python windsurf_quota.py
-```
-
-The script will:
-1. Open a Chrome browser window
-2. Navigate to the Windsurf login page
-3. Automatically enter your credentials and log in
-4. Navigate to the usage page
-5. Extract and display your quota information
-6. Close the browser
-
-## Output Example
-
-```
-==================================================
-WINDSURF QUOTA INFORMATION
-==================================================
-Your daily quota: 71.00% remaining
-Your weekly quota: 0.00% remaining
-Extra usage balance available: $28.31
-==================================================
-```
-
-## Headless Mode
-
-To run the script without opening a visible browser window, modify the last line in `windsurf_quota.py`:
-
-```python
-checker.run(headless=True)  # Change False to True
-```
-
-## Troubleshooting
-
-### Login Issues
-- Verify your credentials in the `.env` file are correct
-- Check if Windsurf has changed their login page structure
-- The script will save a screenshot (`error_screenshot.png`) if an error occurs
-
-### Quota Information Not Found
-- The script tries multiple methods to extract quota data
-- If the page structure has changed, you may need to update the selectors
-- Check `quota_page_error.png` for debugging
-
-### ChromeDriver Issues
-- The script automatically downloads the correct ChromeDriver version
-- Ensure you have Google Chrome installed
-- Check your internet connection
-
-## Security Notes
-
-- Never commit your `.env` file to version control
-- Keep your credentials secure
-- The `.gitignore` file is configured to exclude `.env` automatically
+- Scrapes daily quota %, weekly quota %, and extra usage balance
+- Persists all data in a local SQLite DB (`windsurf_quota.db`)
+- Writes `quota_latest.json` for quick reads by the IDE extension
+- Daily rotating log files (`logs/windsurf_quota_YYYY-MM-DD.log`, 7-day retention)
+- VS Code / Windsurf IDE extension: status bar widget with click-to-sync
+- Scheduled via Windows Task Scheduler — runs every 20 minutes automatically
 
 ## Project Structure
 
 ```
-windsurf_api/
-├── windsurf_quota.py    # Main script
-├── requirements.txt     # Python dependencies
-├── .env.example        # Example environment file
-├── .env               # Your credentials (create this)
-├── .gitignore         # Git ignore rules
-└── README.md          # This file
+windsurf-quota/
+├── windsurf_quota.py          # Main scraper script
+├── requirements.txt           # Python dependencies
+├── schedule_quota.xml         # Windows Task Scheduler import file
+├── .env.example               # Credentials template
+├── .env                       # Your credentials (create from .env.example)
+├── .gitignore
+├── logs/                      # Daily log files (auto-created)
+└── vscode-extension/
+    └── windsurf-quota/
+        ├── extension.js       # VS Code extension
+        └── package.json
 ```
 
-## Dependencies
+## Requirements
 
-- **selenium**: Web automation framework
-- **webdriver-manager**: Automatic ChromeDriver management
-- **python-dotenv**: Environment variable management
+- Python 3.8+
+- Google Chrome installed
+- Windows (for Task Scheduler automation) — the scraper itself works on any OS
+
+## Installation
+
+### 1. Clone and install dependencies
+
+```bash
+git clone https://github.com/BrightClick/windsurf-ide-widget.git
+cd windsurf-ide-widget
+pip install -r requirements.txt
+```
+
+### 2. Configure credentials
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```
+WINDSURF_EMAIL=your@email.com
+WINDSURF_PASSWORD=yourpassword
+```
+
+### 3. Run manually (first time)
+
+```bash
+python windsurf_quota.py
+```
+
+This opens a Chrome window, logs in, scrapes quota data, and saves it to `windsurf_quota.db` and `quota_latest.json`. On subsequent runs the Chrome session is reused so login is skipped.
+
+### 4. Schedule automatic runs (Windows)
+
+Import the included Task Scheduler XML to run every 20 minutes silently:
+
+```powershell
+# Edit schedule_quota.xml first — update the <Command> path to your pythonw.exe
+# and <Arguments> / <WorkingDirectory> to your project path, then run:
+schtasks /create /xml "schedule_quota.xml" /tn "WindsurfQuotaChecker"
+```
+
+The task uses `pythonw.exe` (no console window) and `MultipleInstancesPolicy=IgnoreNew` so overlapping runs are skipped.
+
+## VS Code / Windsurf IDE Extension
+
+The extension shows your daily quota % in the status bar and lets you trigger a manual sync with one click.
+
+![Status bar widget](image_1.png)
+
+### Install
+
+```bash
+cd vscode-extension/windsurf-quota
+# Install via VS Code CLI:
+code --install-extension .
+```
+
+Or open the folder in VS Code and press `F5` to run in development mode.
+
+### Configure (Settings)
+
+| Setting | Description | Example |
+|---|---|---|
+| `windsurfQuota.jsonPath` | Path to `quota_latest.json` | `C:\Projects\windsurf-quota\quota_latest.json` |
+| `windsurfQuota.scriptPath` | Path to `windsurf_quota.py` | `C:\Projects\windsurf-quota\windsurf_quota.py` |
+| `windsurfQuota.pythonPath` | Python executable | `python`, `python3`, or full path to `pythonw.exe` |
+| `windsurfQuota.refreshIntervalSeconds` | How often to re-read the JSON (seconds) | `60` |
+
+### Usage
+
+- **Status bar** shows live daily quota % with a color indicator (green / yellow / red)
+- **Click** the status bar item to trigger an immediate sync (runs `windsurf_quota.py`)
+- The display auto-updates whenever `quota_latest.json` changes on disk
+
+## Logs
+
+Logs are written to `logs/windsurf_quota_YYYY-MM-DD.log`, one file per day, kept for 7 days.
+
+## Troubleshooting
+
+- **Login fails** — verify credentials in `.env`; check `error_screenshot.png` saved next to the script
+- **No data in status bar** — ensure `windsurfQuota.jsonPath` points to `quota_latest.json` and the script has run at least once
+- **ChromeDriver mismatch** — `undetected-chromedriver` auto-matches Chrome version; update Chrome if issues persist
+- **Task not running** — check Task Scheduler history; re-import `schedule_quota.xml` if needed
+
+## Security
+
+- Credentials are stored only in `.env` (excluded from git)
+- Chrome profile is stored locally in `chrome_profile/` (excluded from git)
+- No data is sent anywhere — everything stays local
 
 ## License
 
-This project is provided as-is for personal use.
+MIT

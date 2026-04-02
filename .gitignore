@@ -15,3 +15,5 @@ quota_page_error.png
 chrome_profile/
 windsurf_quota.db
 logs/
+quota_latest.json
+*_export.xml

@@ -20,6 +20,16 @@
           "type": "number",
           "default": 60,
           "description": "How often to re-read the file (seconds)"
+        },
+        "windsurfQuota.scriptPath": {
+          "type": "string",
+          "default": "",
+          "description": "Full path to windsurf_quota.py (e.g. /home/user/windsurf-quota/windsurf_quota.py)"
+        },
+        "windsurfQuota.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python executable to use for running the sync script (e.g. python, python3, pythonw, or full path)"
         }
       }
     },

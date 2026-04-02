@@ -16,19 +16,27 @@ from dotenv import load_dotenv
 def setup_logger():
     log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
     os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, 'windsurf_quota.log')
+
+    # Each day gets its own file: windsurf_quota_YYYY-MM-DD.log
+    today = datetime.now().strftime('%Y-%m-%d')
+    log_path = os.path.join(log_dir, f'windsurf_quota_{today}.log')
 
     logger = logging.getLogger('windsurf_quota')
     logger.setLevel(logging.INFO)
 
-    if not logger.handlers:
-        handler = TimedRotatingFileHandler(
-            log_path, when='midnight', interval=1, backupCount=7, encoding='utf-8'
-        )
-        handler.suffix = '%Y-%m-%d'
-        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+    # Re-create handler daily by checking if current handler points to today's file
+    if logger.handlers:
+        current = getattr(logger.handlers[0], 'baseFilename', '')
+        if os.path.abspath(log_path) == current:
+            return logger
+        for h in logger.handlers[:]:
+            h.close()
+            logger.removeHandler(h)
+
+    handler = logging.FileHandler(log_path, encoding='utf-8')
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     return logger
 
