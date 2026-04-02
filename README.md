@@ -1,5 +1,8 @@
 # Windsurf Quota Checker
 
+[![Open VSX](https://img.shields.io/open-vsx/v/BrightClick/windsurf-quota)](https://open-vsx.org/extension/BrightClick/windsurf-quota)
+[![GitHub](https://img.shields.io/badge/GitHub-BrightClick%2Fwindsurf--ide--widget-blue?logo=github)](https://github.com/BrightClick/windsurf-ide-widget)
+
 Automatically scrapes your [Windsurf](https://windsurf.com) account for daily/weekly quota and extra balance, stores results in a local SQLite database, and shows live stats in your VS Code / Windsurf IDE status bar.
 
 Runs silently in the background on a schedule — no browser window, no manual steps.
