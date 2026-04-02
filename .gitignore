@@ -17,3 +17,5 @@ windsurf_quota.db
 logs/
 quota_latest.json
 *_export.xml
+*.vsix
+test_session.py

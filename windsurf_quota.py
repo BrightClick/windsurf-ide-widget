@@ -105,7 +105,7 @@ class WindsurfQuotaChecker:
         )
         email_input.clear()
         email_input.send_keys(self.email)
-        log.info(f"Entered email: {self.email}")
+        log.info("Entered email")
         
         time.sleep(1)
         

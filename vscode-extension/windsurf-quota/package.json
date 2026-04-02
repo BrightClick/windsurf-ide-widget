@@ -1,8 +1,20 @@
 {
   "name": "windsurf-quota",
   "displayName": "Windsurf Quota",
-  "description": "Shows Windsurf daily quota % and extra balance in the status bar",
+  "description": "Shows Windsurf daily quota % and extra usage balance in the status bar. Click to trigger a live sync.",
   "version": "1.0.0",
+  "publisher": "BrightClick",
+  "license": "MIT",
+  "homepage": "https://github.com/BrightClick/windsurf-ide-widget",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrightClick/windsurf-ide-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BrightClick/windsurf-ide-widget/issues"
+  },
+  "keywords": ["windsurf", "quota", "status bar", "ai", "usage"],
+  "icon": "icon.png",
   "engines": { "vscode": "^1.75.0" },
   "categories": ["Other"],
   "activationEvents": ["*"],

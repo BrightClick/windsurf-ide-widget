@@ -38,9 +38,9 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\Users\elira\AppData\Local\Python\bin\pythonw.exe</Command>
-      <Arguments>"I:\CodeProjects\windsurf_api\windsurf_quota.py"</Arguments>
-      <WorkingDirectory>I:\CodeProjects\windsurf_api</WorkingDirectory>
+      <Command>C:\Path\To\Python\pythonw.exe</Command>
+      <Arguments>"C:\Path\To\windsurf-ide-widget\windsurf_quota.py"</Arguments>
+      <WorkingDirectory>C:\Path\To\windsurf-ide-widget</WorkingDirectory>
     </Exec>
   </Actions>
 </Task>
