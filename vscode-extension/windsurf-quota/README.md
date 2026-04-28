@@ -9,7 +9,7 @@ Shows your Windsurf **daily quota %** and **extra balance $** in the VS Code / W
 ```
 
 - Click the **%** item to refresh immediately
-- Click the **$** item to open the dashboard at http://127.0.0.1:8050
+- Run command **Windsurf Quota: Open Dashboard** to open the PHP dashboard at http://windsurf_api.test/ (served by Laragon)
 
 ## Installation
 

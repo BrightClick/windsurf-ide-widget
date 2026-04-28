@@ -106,41 +106,47 @@ class WindsurfQuotaChecker:
         email_input.clear()
         email_input.send_keys(self.email)
         log.info("Entered email")
-        
+
         time.sleep(1)
-        
+
+        # Step 1: submit email to advance to the password step (Windsurf uses a two-step login flow)
+        self._click_submit_button(step_name="email")
+        log.info("Submitted email, waiting for password field")
+
+        # Step 2: wait for password field to appear on the next page
+        password_input = wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="password"], input[name="password"]'))
+        )
         log.info("Entering password")
-        password_input = self.driver.find_element(By.CSS_SELECTOR, 'input[type="password"], input[name="password"]')
         password_input.clear()
         password_input.send_keys(self.password)
-        
+
         time.sleep(1)
-        
-        log.info("Looking for login button")
+
+        # Step 3: submit password
+        self._click_submit_button(step_name="password")
+        log.info("Clicked login button, waiting for redirect")
+
+        time.sleep(5)
+        log.info("Login completed")
+
+    def _click_submit_button(self, step_name=""):
+        """Find and click the submit/continue button on the current login step."""
         button_selectors = [
             (By.CSS_SELECTOR, 'button[type="submit"]'),
-            (By.XPATH, '//button[contains(text(), "Log in") or contains(text(), "Sign in") or contains(text(), "Continue")]'),
+            (By.XPATH, '//button[contains(text(), "Log in") or contains(text(), "Sign in") or contains(text(), "Continue") or contains(text(), "Next")]'),
             (By.XPATH, '//button[@type="submit"]'),
             (By.CSS_SELECTOR, 'button'),
         ]
-        
-        login_button = None
         for by, selector in button_selectors:
             try:
-                login_button = self.driver.find_element(by, selector)
-                break
-            except:
+                btn = self.driver.find_element(by, selector)
+                btn.click()
+                return
+            except Exception:
                 continue
-        
-        if not login_button:
-            log.error("Could not find login button")
-            raise Exception("Could not find login button")
-        
-        login_button.click()
-        log.info("Clicked login button, waiting for redirect")
-        
-        time.sleep(5)
-        log.info("Login completed")
+        log.error(f"Could not find submit button (step={step_name})")
+        raise Exception(f"Could not find submit button (step={step_name})")
     
     def get_quota_info(self):
         log.info("Navigating to usage page")

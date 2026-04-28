@@ -2,7 +2,7 @@
   "name": "windsurf-quota",
   "displayName": "Windsurf Quota",
   "description": "Shows Windsurf daily quota % and extra usage balance in the status bar. Click to trigger a live sync.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "BrightClick",
   "license": "MIT",
   "homepage": "https://github.com/BrightClick/windsurf-ide-widget",
@@ -42,6 +42,11 @@
           "type": "string",
           "default": "python",
           "description": "Python executable to use for running the sync script (e.g. python, python3, pythonw, or full path)"
+        },
+        "windsurfQuota.dashboardUrl": {
+          "type": "string",
+          "default": "http://windsurf_api.test/",
+          "description": "URL of the PHP dashboard (served by Laragon)."
         }
       }
     },
@@ -49,6 +54,10 @@
       {
         "command": "windsurfQuota.refresh",
         "title": "Windsurf Quota: Refresh Now"
+      },
+      {
+        "command": "windsurfQuota.openDashboard",
+        "title": "Windsurf Quota: Open Dashboard"
       }
     ]
   }

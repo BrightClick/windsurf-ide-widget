@@ -90,6 +90,14 @@ function activate(context) {
     context.subscriptions.push(statusBarDaily);
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('windsurfQuota.openDashboard', () => {
+            const cfg = vscode.workspace.getConfiguration('windsurfQuota');
+            const url = cfg.get('dashboardUrl', 'http://windsurf_api.test/');
+            vscode.env.openExternal(vscode.Uri.parse(url));
+        })
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('windsurfQuota.refresh', () => {
             const cfg = vscode.workspace.getConfiguration('windsurfQuota');
             const scriptPath = cfg.get('scriptPath', '');

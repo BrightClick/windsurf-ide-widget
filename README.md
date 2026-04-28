@@ -27,6 +27,8 @@ windsurf-quota/
 ├── .env                       # Your credentials (create from .env.example)
 ├── .gitignore
 ├── logs/                      # Daily log files (auto-created)
+├── index.php                  # PHP dashboard entry point (served by Laragon)
+├── dashboard/                 # PHP dashboard (views, includes, assets, api.php)
 └── vscode-extension/
     └── windsurf-quota/
         ├── extension.js       # VS Code extension
@@ -111,6 +113,36 @@ Or open the folder in VS Code and press `F5` to run in development mode.
 - **Status bar** shows live daily quota % with a color indicator (green / yellow / red)
 - **Click** the status bar item to trigger an immediate sync (runs `windsurf_quota.py`)
 - The display auto-updates whenever `quota_latest.json` changes on disk
+
+## PHP Dashboard (Laragon)
+
+A modern PHP dashboard reads `windsurf_quota.db` directly and renders KPIs, a history chart, and credit history. It is auto-served by Laragon at:
+
+```
+http://windsurf_api.test/
+```
+
+### Setup
+
+Laragon's Auto Virtual Hosts only serves projects from `C:\laragon\www`. Since this project lives elsewhere, create a directory symlink (one-time, run as Administrator):
+
+```powershell
+mklink /D C:\laragon\www\windsurf_api I:\CodeProjects\windsurf_api
+```
+
+Then in Laragon click **Reload** (or restart Apache/Nginx). The vhost `windsurf_api.test` will be created automatically and resolve to this folder.
+
+### Endpoints
+
+| URL | Purpose |
+|---|---|
+| `http://windsurf_api.test/` | Dashboard UI |
+| `http://windsurf_api.test/dashboard/api.php` | JSON: latest quota, history, credits |
+
+### Requirements
+
+- PHP with `pdo_sqlite` enabled (default in Laragon)
+- The scraper (`windsurf_quota.py`) must have run at least once so `windsurf_quota.db` exists
 
 ## Logs
 
